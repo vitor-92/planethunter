@@ -1,0 +1,13 @@
+[project]
+name = "planethunter-fpp"
+version = "0.1.0"
+description = "Isolated environment for triceratops (requires numpy 1.26 / scipy 1.13, incompatible with the main environment)."
+requires-python = ">=3.12,<3.13"
+dependencies = [
+    "triceratops==1.1.0",
+    "numpy<2",
+    "lightkurve>=2.4",
+]
+
+[tool.uv]
+package = false

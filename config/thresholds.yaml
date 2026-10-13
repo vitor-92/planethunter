@@ -1,0 +1,300 @@
+# PlanetHunter thresholds and parameters.
+# Every change to preprocess/search/vetting/crossmatch requires rerunning the benchmark
+# (planethunter benchmark run) and recording before/after in docs/benchmarks/.
+version: 1
+
+preprocess:
+  quality_bitmask: default        # lightkurve bitmask: none | default (17087) | hard | hardest
+  sigma_upper: 4.0                # clip upwards only; never clip downwards (transits)
+  detrend_method: biweight        # wotan (Hippke et al. 2019, AJ 158, 143)
+  # ~3x the longest duration searched. Measured (2026-10-09, 1500 ppm box transit, no variability):
+  #   a 0.5 d window loses 8 % on a 3 h transit and 40 % on 5 h; a 1.0 d window loses 0 % and 6 %.
+  # Sun-like star, b = 0: P = 10 d lasts 3.9 h; P = 20-40 d lasts 4.9-6.2 h. A 1.0 d window covers up to ~8 h.
+  window_length_days: 1.0
+  # If the red-noise ratio > red_noise_max, redo with smaller windows (variable stars).
+  # Ratio = MAD(flux) / point-to-point MAD: ~1 for white noise and a deep transit no longer
+  # inflates it (audit B2: the old std/p2p ratio rewarded windows that ate the transit).
+  # Measured on 300 sector 69 targets (2026-10-10): > 1.2 for 18.7 % with std, 16.0 % with MAD
+  # (all 8 stars dropped have deep dips, 5 are TOIs); Pont 2006 beta on 1 h bins
+  # (red_noise_bin_hours: 1.0) flags 41 %, so it stays off.
+  # Measured: TOI 862.01 (5092 ppm) vanishes with 1.0 d and shows up with 0.5 d (SDE 18).
+  fallback_windows_days: [0.5, 0.3]
+  red_noise_max: 1.2
+  red_noise_bin_hours: 0.0        # > 0: Pont beta on bins of this size instead of the MAD ratio
+  break_tolerance_days: 0.5       # split segments at orbit gaps
+  edge_cutoff_days: 0.0           # 0 preserves events at the edges (single transits)
+  min_points: 500
+  # Re-detrending a signal (vetting): each sector uses its search-time window, never below
+  # min_window_durations x T14 (Hippke et al. 2019: window ~3x T14), with the signal's transits
+  # masked over signal_mask_width_durations x T14 so the trend is interpolated across them.
+  # Measured (2026-10-10, 12 h / 2000 ppm transit): 1.0 d window without mask keeps 50 % (42 % with
+  # 2000 ppm variability); window 1.5 d + mask keeps 99 % (86 % with variability; mask 2.0 x: 80 %).
+  min_window_durations: 3.0
+  signal_mask_width_durations: 1.5
+
+search:
+  bin_minutes: 10                 # 0 disables binning; 10 min loses little for P > 1 d
+  # QLP (Kunimoto et al. 2023): P_min where a = 2 R*. TLS uses a = 3 R*; R* for the grid is
+  # scaled by roche_min_a_rstar / 3 (grid density kept by scaling the oversampling the same way).
+  # Before: effective P_min 0.6-1.0 d and 13 of 505 sector 69 TOIs were outside the grid (audit B1).
+  period_min_days: 0.2
+  roche_min_a_rstar: 2.0
+  period_max_fraction_of_span: 0.9   # 2 transits are enough for a period; P/3 aliases resolved in refine_alias
+  # Absolute ceiling. Multi-sector with sectors years apart (span ~800 d) produced a huge grid
+  # and spurious 26-64 d aliases with 1-2 transits (TIC 41230546, 31929204).
+  period_max_days: 40.0
+  # TLS sets f_min = n_transits_min / span; with its default 2 the real P_max was span/2 and
+  # period_max_fraction_of_span did nothing (audit B1). vetting.min_transits = 2 still applies.
+  n_transits_min: 1
+  oversampling_factor: 3
+  duration_grid_step: 1.1
+  # TLS template limb darkening: tess = Claret (2017) TESS-band quadratic u from Teff/logg
+  # (table shipped with TLS); default = TLS Kepler-band Sun-like u.
+  limb_darkening: tess
+  max_signals_per_target: 3       # iterative search with masking
+  sde_keep: 7.0                   # keep signals with SDE >= this (ML uses the weak ones)
+  mask_width_durations: 2.0       # mask width in units of T14 (physical duration, audit A5)
+  # An epoch counts as observed only if >= this fraction of [-T14/2, +T14/2] has data (audit B11).
+  min_epoch_coverage: 0.5
+  segment_gap_days: 0.5           # gap that separates segments (orbits, downlink)
+  edge_window_days: 0.5           # transit centered closer than this to an edge = suspicious
+  workers: 0                      # 0 = n_cpus - 1; per target; capped by env PLANETHUNTER_MAX_WORKERS
+  tls_backend: fused-pl           # TLS 2.0; with 1 thread per target (measured: 0.7 s vs 18.7 s with 8 threads on Windows)
+  null_seed: 0                    # RNG seed for scrambled null runs (Thompson et al. 2018)
+
+vetting:
+  sde_min: 9.0                    # TLS docs: SDE 9.1 ~ FAP 1e-4 in white noise (Hippke & Heller 2019: SDE 7 ~ 1 %); optimistic with red noise
+  snr_min: 7.1
+  # Red-noise detection gate: S/N_pink (Pont et al. 2006 on the T14 scale; signals.snr_pink).
+  # QLP uses S/N_pink >= 9 (Guerrero et al. 2021; Kunimoto et al. 2022, 2023). NULL (runs
+  # before the column) -> passed=None, never a veto. snr_pink_veto: false = soft fail.
+  snr_pink_min: 9.0
+  # Measured 2026-10-10 (recompute s107 + s69 known classes; S/N_pink estimated on the
+  # search-style light curve, stored runs have it NULL): S/N_pink < 9 for 22 of 141 KNOWN_PLANET.
+  # As a veto it removes 11 of 112 passing planets (10 %; s107 5/71, s69 6/41) and 5 of 15
+  # passing FPs; as a soft fail 2 planets and 2 FPs. > 3 % planet loss -> soft fail until the
+  # rerun benchmark with stored snr_pink confirms. Weight in weights.snr_pink.
+  snr_pink_veto: false
+  min_transits: 2
+  # Detrending ramps at orbit edges mimic transits (measured: pure noise with
+  # 2000 ppm variability yields SDE ~10 at P = 1 orbit, event 0.07 d from the edge).
+  max_edge_transit_fraction: 0.5
+  # Basic vetting (no network). Each failed test multiplies the score by its weight; a veto zeroes it.
+  # The score only ranks. Verdict (audit B6, 2026-10-10): FAIL on any veto, on any failure of a
+  # hard_fail_tests entry, or on more than max_soft_fails soft failures; else PASS_BASIC.
+  # Before: any weight <= 0.5 failed alone (5 confirmed planets failed on one soft test).
+  max_soft_fails: 1
+  # Tests whose failure alone is decisive: transit source off target (Bryson+2013, 3 sigma),
+  # FPP > 0.5 or NFPP > 0.1 (Giacalone+2021), a >= 5 sigma dip at another phase, and a V shape.
+  # Measured 2026-10-10 (recompute, KNOWN_PLANET / KNOWN_FP / NEW pass rates):
+  #   s107: old rule 79/5/5 %; max_soft_fails=1 alone 88/14/20 %; + secondary_scan 88/11/7 %;
+  #         + secondary_scan + shape (this setting) 85/5/5 %.
+  #   s69:  old rule 77/11/5 %; alone 81/15/16 %; + scan 79/15/11 %; this setting 74/8/10 %.
+  # The shape entry costs ~3 grazing hot Jupiters per sector (NGTS-6 Ab, NGTS-10 b) and stops
+  # 4-9 EBs at half their period; drop it to favour completeness.
+  hard_fail_tests: [tpf_difference_image, fpp_triceratops, secondary_scan, shape]
+  # Audit G7: also mask weaker sibling signals (non-alias periods) in the basic tests.
+  # Measured: no known planet gained; 1-2 more TESS EBs passed in s107, because an EB's own
+  # eclipses are often re-detected at non-alias periods. Off by default.
+  mask_weaker_signals: false
+  odd_even_fail_sigma: 3.0
+  odd_even_veto_sigma: 5.0
+  secondary_fail_sigma: 3.0
+  secondary_veto_sigma: 5.0
+  secondary_veto_ratio: 0.1       # secondary/primary; below this it may be a planetary occultation
+  # Period halving (audit A7): a phase-0.5 dip with the primary's depth (< 3 sigma apart) and
+  # T14 (within 35 %) is the in-between transit of a signal found at 2P; re-vet at P/2.
+  # Before: TOI-431 b and 5 TOIs at alias 2 were vetoed by the secondary test.
+  halving_max_depth_sigma: 3.0
+  halving_duration_tol: 0.35
+  # Trapezoid fit: soft_l1 with f_scale = this x sigma_white (audit, Tier C: f_scale=1 made it
+  # plain least squares). 0 = plain least squares. Measured on known classes (s69, s107): 1, 2
+  # and plain least squares agree within one object.
+  trapezoid_f_scale_sigma: 1.0
+  rp_rs_max: 0.3
+  # Limb-darkened transit fit (batman, Kreidberg 2015; vetting/ldfit.py): Claret (2017) TESS
+  # quadratic u by Teff/logg (TLS table), free k, b, T14, mid-time; circular orbit. Long cadences
+  # are supersampled into sub-exposures <= ld_fit_subexposure_minutes (Kipping 2010b): 2-min
+  # data 1, 200 s 2, 10 min 5, 30 min 15. Among starting points within ld_fit_delta_chi2 of the
+  # best chi^2 the lowest b wins (grazing must be preferred by the data). Its k feeds the radius
+  # test (non-grazing fits only) and the soft kdr25_grazing test (k + b > kdr25_max, Kepler DR25
+  # grazing cut, Thompson et al. 2018). k or T14 on a bound -> unconstrained, trapezoid fallback.
+  # Measured 2026-10-10 (recompute s107 + s69): kdr25 fails 7/140 constrained KNOWN_PLANET (all
+  # grazing and already failing shape: LTT 9779 b, HIP 65 A b, NGTS-10 b, TOI-263 b, ...) and
+  # 97/179 KNOWN_FP. Pass rates KNOWN_PLANET 112 -> 112 / 141, KNOWN_FP 15 -> 14 / 197. Median
+  # fitted k / Archive pl_ratror 1.01 (s107, n = 66) and 1.00 (s69, n = 42) vs 1.03 for
+  # sqrt(trapezoid depth). Cost ~0.2 s per signal (median; mean 0.37 s, max 3.5 s).
+  ld_fit_enabled: true
+  ld_fit_subexposure_minutes: 2.0
+  ld_fit_delta_chi2: 1.0
+  kdr25_max: 1.04
+  # Trapezoid tau/T14; 0.5 = triangular. Measured in sector 69: 0.35 catches 8/18 TFOPWG FPs and
+  # flags 3/50 planets (grazing: HIP 65 A b, LTT 9779 b, TOI-2382 b). Soft fail (weight 0.5).
+  v_shape_max: 0.35
+  secondary_scan_fail_sigma: 5.0  # secondary at any phase (eccentric EB); higher: many trials
+  radius_fail_rearth: 22.4        # 2 R_Jup
+  radius_veto_rearth: 33.6        # 3 R_Jup
+  # The radius veto needs a reliable R* (log g >= 3.5) AND another EB sign (V shape, odd-even or
+  # secondary); otherwise a soft fail. Mullally et al. 2015: no FP from inferred radius alone.
+  radius_veto_min_logg: 3.5
+  # T_obs / T_pred(b=0, circular). 1.67 as in LEO-Vetter (Kunimoto+2025); eccentric orbits
+  # lengthen transits (Kipping 2010). Measured (audit): 1.3 -> 1.67 moves 84 NEW from fail to
+  # pass and no known planet. Trapezoid fits on their T14 bound give passed=None (unconstrained).
+  duration_ratio_max: 1.67
+  # Too short: b ~ 0.99 or a signal from a smaller star (blend). Signal 1594: 0.58 h on a
+  # giant with R = 3.06 and 10.7 h predicted (ratio 0.05).
+  duration_ratio_min: 0.15
+  centroid_fail_sigma: 3.0        # in-transit centroid shift (MOM_CENTR, offline)
+  centroid_max_offset_px: 1.0     # implied source = shift / (CROWDSAP x depth); 1 px = 21"
+  # Indeterminate (Kostov+2019, DAVE) with < 3 transits per sector or a saturated star.
+  centroid_min_transits: 3
+  centroid_min_tmag: 7.0
+  # Empirical per-epoch error from fake out-of-transit epochs (audit B5: white-noise errors
+  # failed 2-47 % of random epochs against 1 % expected).
+  centroid_null_epochs: 200
+  dump_window_days: 0.1
+  max_dump_transit_fraction: 0.5
+  transit_consistency_pvalue_min: 0.001
+  weights:                         # score multiplier when the test fails (no veto)
+    sde: 0.5
+    snr: 0.5
+    n_transits: 0.6
+    odd_even: 0.4
+    secondary: 0.4
+    secondary_scan: 0.5
+    tpf_difference_image: 0.3
+    other_sectors: 0.3
+    simbad_type: 0.5
+    gaia_eb: 0.4
+    fpp_triceratops: 0.3
+    shape: 0.5
+    radius: 0.3
+    duration: 0.6
+    centroid: 0.4
+    edges_dumps: 0.4
+    consistency: 0.5
+    gaia_neighbors: 0.5
+    snr_pink: 0.5                  # only when snr_pink_veto is false
+    kdr25_grazing: 0.6
+  unknown_weight: 0.95             # test without enough data
+  # No unknown_weight for: snr_pink NULL (run predates the column, not missing data) and
+  # kdr25_grazing without a constrained LD fit (the duration test already pays for it).
+  unknown_exempt_tests: [snr_pink, kdr25_grazing]
+  # Deep vetting.
+  tpf_offset_sigma: 3.0            # difference-image centroid vs catalog position (Bryson+2013)
+  tpf_max_offset_px: 1.0           # and > 1 px; TIC position propagated with proper motion
+  psf_sigma_px: 0.75               # Gaussian PSF for neighbor dilution (triceratops, Giacalone+2021)
+  other_sectors_null_trials: 40    # noise floor = p90 of BLS at random periods, signal masked (B3)
+  simbad_fail_otypes: ["EB*", "SB*", "El*"]   # other SIMBAD types are informational only
+  # FPP (triceratops, isolated environment tools/fpp). 1e5 draws: ~6 min/candidate (WASP-100 b).
+  fpp_enabled: true
+  fpp_draws: 100000
+  # Giacalone+2021 repeat each case 20 times; 3 repeats give a mean and a scatter for the cost.
+  fpp_repeats: 3
+  fpp_timeout_s: 1800
+  # Giacalone+2021: FPP < 0.5 plausible, FPP < 0.015 and NFPP < 1e-3 validation level;
+  # NFPP > 0.1 = likely nearby false positive (fail). NFPP > 0.5 vetoes: most of the posterior
+  # sits on a resolved neighbor. The classes hold only for Rp < 8 R_earth, SNR >= 15, 2-min data.
+  fpp_max: 0.5
+  fpp_nfpp_fail: 0.1
+  fpp_nfpp_veto: 0.5
+  fpp_validated: 0.015
+  fpp_nfpp_validated: 0.001
+  fpp_validation_max_rp_rearth: 8.0
+  fpp_validation_min_snr: 15.0
+  fpp_validation_max_exptime_min: 2.0
+  deep_workers: 4                  # candidates in parallel during deep vetting (network + CPU)
+  pass_score: 0.5                  # legacy: no longer gates the verdict (see max_soft_fails)
+
+crossmatch:
+  # Period tolerance = max(period_rel_tol, 3 sigma_P/P of the candidate), capped at
+  # period_rel_tol_max. Beyond period_rel_tol the T0 phase check is mandatory
+  # (audit B9: signal 2665 vs TOI-341.01 is 2-3 % off with sigma_P ~ 1 %).
+  period_rel_tol: 0.01
+  period_rel_tol_max: 0.03
+  phase_tol: 0.05                 # fraction of the common period grid
+  default_period_rel_err: 1.0e-4  # sigma_P/P assumed when a catalog gives none (audit A10)
+  host_radius_arcsec: 21.0        # 1 TESS pixel
+  nearby_radius_arcsec: 120.0
+  # Freshness. Live sources (ExoFOP TOI/CTOI, Archive pscomppars) must be < 48 h old
+  # (CLAUDE.md invariant; the ExoFOP CSV is the source of truth, Archive TOI syncs weekly).
+  # exoplanet.eu and K2 change slowly (weekly); the Kepler KOI table is effectively frozen
+  # (monthly). Static catalogs (VizieR tables) never expire: they only need to be present
+  # with the catalog version the code expects (recorded with a sha256 in the manifest).
+  mirror_max_age_hours: 48.0
+  mirror_max_age_hours_by_source:
+    exoplanet_eu: 168.0
+    k2_pandc: 168.0
+    koi_cumulative: 720.0
+  static_sources: [eb_catalog, eb_kostov2025, pub_diamante, pub_dtarps, pub_leo_vetter, pub_exominerpp]
+  # Transit-by-transit matcher (audit A9): window = max(0.5 D, floor) + 3 sigma_prop; objects
+  # with 3 sigma_prop > min(0.25 d, 0.1 P) are skipped; >= 50 % of the transits must coincide
+  # AND the binomial false-alarm probability P(X >= k | n, f) must be < transit_max_fap,
+  # f = summed fractional coverage of the windows. The old loose matcher fired by chance
+  # 36 % of the time (80-87 % for known P < 2 d).
+  transit_window_floor_hours: 1.0
+  transit_max_unc_days: 0.25
+  transit_max_unc_frac: 0.1
+  transit_min_fraction: 0.5
+  transit_max_fap: 0.01
+  # The chance probability uses the largest observed residual r among the explained
+  # transits: f_obs = sum over period clusters (one planet listed by several catalogs
+  # counts once) of n_phases x 2 max(r, floor) / P; floor ~ transit-time precision.
+  transit_residual_floor_hours: 0.25
+  # >= 50 % coincide but transit_max_fap <= fap < transit_flag_max_fap: stays NEW with the
+  # notes token partial_known_transit_coincidence (severity caps at P2). Sector 69: GJ 143
+  # signal 2129 (1 of 2 transits on GJ 143 b, fap 0.04); sector 107: 5017 on TOI-451 (0.06).
+  transit_flag_max_fap: 0.1
+  # Integer harmonics n or 1/n (n <= 50; EBs also n/2) on the HOST only, with a mandatory
+  # phase check and a chance probability (period coincidence x phase coverage) below
+  # harmonic_max_fap (Thompson+2018 ephemeris matching; audit G7: WD 0137-349 b x8, EF Eri x11).
+  harmonic_max_n: 50
+  harmonic_rel_tol_min: 0.001
+  harmonic_max_fap: 0.05
+  # Run-level common-epoch systematics (audit A8). Histogram of transit mid-times of the run's
+  # few-transit signals, counting distinct targets per 0.25 d bin (two grids offset by half a
+  # bin), leave-one-target-out. Spike: count >= max(factor x median, median + z sqrt(median),
+  # min_count). epoch_spike_frac = fraction of a signal's transits inside spikes; NULL when
+  # fewer than epoch_spike_min_targets targets contribute. Severity: >= epoch_spike_max_frac
+  # means systematic, no alert.
+  epoch_spike_bin_days: 0.25
+  epoch_spike_factor: 5.0
+  epoch_spike_z: 5.0
+  epoch_spike_min_count: 5
+  epoch_spike_min_targets: 100
+  epoch_spike_max_transits: 5
+  epoch_spike_max_frac: 0.5
+  # Same period (aliases 1, 2, 1/2) and T0 on ANOTHER target of the run within this radius.
+  # Role: duplicate (sep <= duplicate_radius_arcsec, TIC duplicate/split, Paegert+2021),
+  # victim (not the source) or source. Severity: duplicate/victim no alert; source capped at P2.
+  shared_signal_radius_arcsec: 120.0
+  duplicate_radius_arcsec: 2.0
+  shared_signal_period_tol_min: 0.001
+  shared_signal_period_tol_max: 0.01
+  # Two apertures > 1 TESS pixel apart that capture comparable eclipsed flux (smaller/larger
+  # > this) are both victims of a third star (the source aperture captures the most flux).
+  shared_signal_flux_ratio_max: 0.5
+
+severity:                         # alerts/severity.py; docs/PLAN.md §7
+  score_min_p1: 0.8               # deterministic vetting score needed for P0/P1 (the ML can only lower)
+  p0_fpp_max: 0.1                 # project choice for alerting (between "likely planet" 0.5 and "validated" 0.015)
+  # Giacalone+2021 (TRICERATOPS): NFPP < 1e-3 for "likely planet"/"validated"; the classes hold only
+  # for Rp < 8 R_earth, work best at SNR > 15, and 30-min FFI data has no confident validation region.
+  # Outside this region the ceiling is P1.
+  p0_nfpp_max: 0.001
+  nfpp_fail: 0.1                  # NFPP > 0.1 = likely nearby false positive: ceiling P2
+  p0_rp_max_rearth: 8.0
+  p0_snr_min: 15.0
+  p0_require_2min: true
+  two_min_authors: [SPOC]         # light-curve authors with 2-min (or 20-s) cadence
+  epoch_spike_max_frac_default: 0.5  # only if crossmatch.epoch_spike_max_frac is not set
+  # ML operating points come from the model JSON (out-of-fold recall on KNOWN_PLANET);
+  # these fallbacks apply only to schema-1 models without operating points.
+  p1_cut_fallback: 0.8
+  p2_cut_fallback: 0.5
+  p2_recall_target: 0.90          # P2 cut keeps >= 90 % of known planets (rescue of failed vetting)
+  p1_recall_target: 0.70          # P1 cut never drops more than 30 % of known planets ...
+  p1_fpr_max: 0.01                # ... and is the lowest cut with <= 1 % out-of-fold false positives
+  # ASSUMPTION, not a measurement: planet fraction among NEW signals. Only for the displayed
+  # p_abs (vetting.p_abs); severity never uses it.
+  new_prior: 0.05

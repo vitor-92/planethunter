@@ -1,0 +1,66 @@
+.md-typeset p.meta {
+  color: var(--md-default-fg-color--light);
+  font-size: 0.8rem;
+  margin-top: -0.6rem;
+}
+
+.md-typeset .course-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
+  gap: 1rem;
+  margin: 1rem 0;
+}
+
+.md-typeset .course-card {
+  border: 1px solid var(--md-default-fg-color--lightest);
+  border-radius: 0.4rem;
+  padding: 0.8rem 1rem;
+}
+
+.md-typeset .course-card h3 {
+  margin-top: 0;
+}
+
+/* Simulador */
+#transit-sim .ts-controls {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
+  gap: 0.4rem 1.5rem;
+  margin-bottom: 1rem;
+}
+
+#transit-sim label {
+  display: block;
+  font-size: 0.75rem;
+}
+
+#transit-sim label input {
+  display: block;
+  margin-top: 0.2rem;
+}
+
+#transit-sim input[type="range"] {
+  width: 100%;
+  accent-color: var(--md-accent-fg-color);
+}
+
+#transit-sim canvas {
+  display: block;
+  margin: 0.6rem 0;
+  border-radius: 0.3rem;
+}
+
+#transit-sim .ts-presets button {
+  margin: 0 0.4rem 0.4rem 0;
+  padding: 0.2rem 0.7rem;
+  border: 1px solid var(--md-default-fg-color--lighter);
+  border-radius: 1rem;
+  background: transparent;
+  color: var(--md-default-fg-color);
+  cursor: pointer;
+  font-size: 0.75rem;
+}
+
+#transit-sim .ts-presets button:hover {
+  border-color: var(--md-accent-fg-color);
+}

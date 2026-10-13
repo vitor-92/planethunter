@@ -1,0 +1,215 @@
+site_name: "Planet Hunters Course"
+site_description: "A course for beginners on how exoplanets are found and how the PlanetHunter tool works."
+site_author: PlanetHunter contributors
+# Final URL (GitHub Pages). If you point a custom domain at Pages, change it here.
+site_url: https://vitor-92.github.io/planethunter/
+docs_dir: docs
+site_dir: site
+
+theme:
+  name: material
+  language: en
+  features:
+    - navigation.sections
+    - navigation.indexes
+    - navigation.footer
+    - navigation.top
+    - navigation.tracking
+    - search.suggest
+    - search.highlight
+    - content.code.copy
+    - toc.follow
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: indigo
+      accent: amber
+      toggle:
+        icon: material/weather-night
+        name: Dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: indigo
+      accent: amber
+      toggle:
+        icon: material/weather-sunny
+        name: Light mode
+  icon:
+    logo: material/telescope
+
+plugins:
+  - search
+  - i18n:
+      docs_structure: folder
+      fallback_to_default: true
+      reconfigure_material: true
+      reconfigure_search: true
+      languages:
+        - locale: en
+          name: English
+          build: true
+          default: true
+        - locale: es
+          name: Español
+          build: true
+          site_name: "Cazadores de Planetas"
+          site_description: "Un curso para principiantes sobre cómo se buscan exoplanetas y cómo funciona la herramienta PlanetHunter."
+          theme:
+            language: es
+          nav:
+            - "Inicio": index.md
+            - "Cómo estudiar": how-to-study.md
+            - "Nivel básico":
+                - basic/index.md
+                - "B1. Cielo, estrellas y planetas": basic/b1-sky-stars-planets.md
+                - "B2. El método de tránsito": basic/b2-transit-method.md
+                - "B3. El telescopio TESS": basic/b3-tess-telescope.md
+                - "B4. Por qué casi toda señal es falsa": basic/b4-false-positives.md
+                - "B5. Práctica con ojos humanos": basic/b5-human-eye-practice.md
+                - "Autoevaluación": basic/assessment.md
+            - "Nivel intermedio":
+                - intermediate/index.md
+                - "M1. Estadística para señales": intermediate/m1-statistics-for-signals.md
+                - "M2. Física del tránsito": intermediate/m2-transit-physics.md
+                - "M3. Periodogramas": intermediate/m3-periodograms.md
+                - "M4. Datos de TESS en Python": intermediate/m4-tess-data-in-python.md
+                - "M5. Vetting en la práctica": intermediate/m5-vetting-in-practice.md
+                - "Autoevaluación": intermediate/assessment.md
+            - "Nivel avanzado":
+                - advanced/index.md
+                - "A1. Algoritmos de detección": advanced/a1-detection-algorithms.md
+                - "A2. Cómo hacen vetting las misiones": advanced/a2-mission-vetting.md
+                - "A3. Probabilidad de falso positivo": advanced/a3-false-positive-probability.md
+                - "A4. Aprendizaje automático": advanced/a4-machine-learning.md
+                - "A5. Medir el sistema": advanced/a5-measuring-the-system.md
+                - "A6. Del candidato a la comunidad": advanced/a6-from-candidate-to-community.md
+                - "Autoevaluación": advanced/assessment.md
+            - "Ruta de programación":
+                - programming/index.md
+                - "P1. Python básico": programming/p1-python-basics.md
+                - "P2. NumPy, pandas y Matplotlib": programming/p2-numpy-pandas-matplotlib.md
+                - "P3. Lightkurve en la práctica": programming/p3-lightkurve-in-practice.md
+            - "Laboratorio":
+                - "Simulador de tránsito": lab/transit-simulator.md
+                - "Usar PlanetHunter": lab/using-planethunter.md
+            - "Glosario": glossary.md
+            - "Referencias": references.md
+        - locale: pt
+          name: Português
+          build: true
+          site_name: "Caçadores de Planetas"
+          site_description: "Curso para quem está começando a entender a busca de exoplanetas e a ferramenta PlanetHunter."
+          theme:
+            language: pt
+          nav:
+            - "Início": index.md
+            - "Como estudar": how-to-study.md
+            - "Nível básico":
+                - basic/index.md
+                - "B1. Céu, estrelas e planetas": basic/b1-sky-stars-planets.md
+                - "B2. O método de trânsito": basic/b2-transit-method.md
+                - "B3. O telescópio TESS": basic/b3-tess-telescope.md
+                - "B4. Por que quase todo sinal é falso": basic/b4-false-positives.md
+                - "B5. Prática com olhos humanos": basic/b5-human-eye-practice.md
+                - "Autoavaliação": basic/assessment.md
+            - "Nível médio":
+                - intermediate/index.md
+                - "M1. Estatística para sinais": intermediate/m1-statistics-for-signals.md
+                - "M2. Física do trânsito": intermediate/m2-transit-physics.md
+                - "M3. Periodogramas": intermediate/m3-periodograms.md
+                - "M4. Dados do TESS em Python": intermediate/m4-tess-data-in-python.md
+                - "M5. Vetting na prática": intermediate/m5-vetting-in-practice.md
+                - "Autoavaliação": intermediate/assessment.md
+            - "Nível avançado":
+                - advanced/index.md
+                - "A1. Algoritmos de detecção": advanced/a1-detection-algorithms.md
+                - "A2. Como as missões fazem vetting": advanced/a2-mission-vetting.md
+                - "A3. Probabilidade de falso positivo": advanced/a3-false-positive-probability.md
+                - "A4. Aprendizado de máquina": advanced/a4-machine-learning.md
+                - "A5. Medir o sistema": advanced/a5-measuring-the-system.md
+                - "A6. Do candidato à comunidade": advanced/a6-from-candidate-to-community.md
+                - "Autoavaliação": advanced/assessment.md
+            - "Trilha de programação":
+                - programming/index.md
+                - "P1. Python básico": programming/p1-python-basics.md
+                - "P2. NumPy, pandas e Matplotlib": programming/p2-numpy-pandas-matplotlib.md
+                - "P3. Lightkurve na prática": programming/p3-lightkurve-in-practice.md
+            - "Laboratório":
+                - "Simulador de trânsito": lab/transit-simulator.md
+                - "Usando o PlanetHunter": lab/using-planethunter.md
+            - "Glossário": glossary.md
+            - "Referências": references.md
+
+markdown_extensions:
+  - admonition
+  - attr_list
+  - md_in_html
+  - tables
+  - footnotes
+  - toc:
+      permalink: true
+      toc_depth: 3
+  - pymdownx.details
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+  - pymdownx.tasklist:
+      custom_checkbox: true
+      clickable_checkbox: true
+  - pymdownx.arithmatex:
+      generic: true
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.inlinehilite
+  - pymdownx.keys
+  - pymdownx.mark
+
+extra_javascript:
+  - javascripts/mathjax-config.js
+  - https://cdn.jsdelivr.net/npm/mathjax@3.2.2/es5/tex-mml-chtml.js
+  - javascripts/progress.js
+  - javascripts/transit-sim.js
+
+extra_css:
+  - css/extra.css
+
+nav:
+  - "Home": index.md
+  - "How to study": how-to-study.md
+  - "Basic level":
+      - basic/index.md
+      - "B1. Sky, stars and planets": basic/b1-sky-stars-planets.md
+      - "B2. The transit method": basic/b2-transit-method.md
+      - "B3. The TESS telescope": basic/b3-tess-telescope.md
+      - "B4. Why almost every signal is false": basic/b4-false-positives.md
+      - "B5. Practice with human eyes": basic/b5-human-eye-practice.md
+      - "Self-assessment": basic/assessment.md
+  - "Intermediate level":
+      - intermediate/index.md
+      - "M1. Statistics for signals": intermediate/m1-statistics-for-signals.md
+      - "M2. Transit physics": intermediate/m2-transit-physics.md
+      - "M3. Periodograms": intermediate/m3-periodograms.md
+      - "M4. TESS data in Python": intermediate/m4-tess-data-in-python.md
+      - "M5. Vetting in practice": intermediate/m5-vetting-in-practice.md
+      - "Self-assessment": intermediate/assessment.md
+  - "Advanced level":
+      - advanced/index.md
+      - "A1. Detection algorithms": advanced/a1-detection-algorithms.md
+      - "A2. How missions do vetting": advanced/a2-mission-vetting.md
+      - "A3. False positive probability": advanced/a3-false-positive-probability.md
+      - "A4. Machine learning": advanced/a4-machine-learning.md
+      - "A5. Measuring the system": advanced/a5-measuring-the-system.md
+      - "A6. From candidate to community": advanced/a6-from-candidate-to-community.md
+      - "Self-assessment": advanced/assessment.md
+  - "Programming track":
+      - programming/index.md
+      - "P1. Python basics": programming/p1-python-basics.md
+      - "P2. NumPy, pandas and Matplotlib": programming/p2-numpy-pandas-matplotlib.md
+      - "P3. Lightkurve in practice": programming/p3-lightkurve-in-practice.md
+  - "Lab":
+      - "Transit simulator": lab/transit-simulator.md
+      - "Using PlanetHunter": lab/using-planethunter.md
+  - "Glossary": glossary.md
+  - "References": references.md
