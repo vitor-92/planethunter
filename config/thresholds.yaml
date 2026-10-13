@@ -84,6 +84,11 @@ vetting:
   # hard_fail_tests entry, or on more than max_soft_fails soft failures; else PASS_BASIC.
   # Before: any weight <= 0.5 failed alone (5 confirmed planets failed on one soft test).
   max_soft_fails: 1
+  # Soft tests that lower the score but do not count toward max_soft_fails. snr_pink: measured
+  # 2026-10-13 on s69 (rerun), counting it failed 2 more confirmed planets (TOI-178.04,
+  # TOI-248 b) and 4 TOIs with no extra TFOPWG FP rejected (KNOWN_PLANET 39 -> 41/58,
+  # KNOWN_FP 4 -> 4/66). Its weight (0.5) still keeps such signals below the P1 score.
+  uncounted_soft_tests: [snr_pink]
   # Tests whose failure alone is decisive: transit source off target (Bryson+2013, 3 sigma),
   # FPP > 0.5 or NFPP > 0.1 (Giacalone+2021), a >= 5 sigma dip at another phase, and a V shape.
   # Measured 2026-10-10 (recompute, KNOWN_PLANET / KNOWN_FP / NEW pass rates):
@@ -253,16 +258,20 @@ crossmatch:
   harmonic_max_fap: 0.05
   # Run-level common-epoch systematics (audit A8). Histogram of transit mid-times of the run's
   # few-transit signals, counting distinct targets per 0.25 d bin (two grids offset by half a
-  # bin), leave-one-target-out. Spike: count >= max(factor x median, median + z sqrt(median),
-  # min_count). epoch_spike_frac = fraction of a signal's transits inside spikes; NULL when
+  # bin), leave-one-target-out. Spike: count >= max(median + z max(1.4826 MAD, sqrt(median)),
+  # factor x median, min_count). epoch_spike_frac = fraction of a signal's transits inside spikes; NULL when
   # fewer than epoch_spike_min_targets targets contribute. Severity: >= epoch_spike_max_frac
   # means systematic, no alert.
   epoch_spike_bin_days: 0.25
-  epoch_spike_factor: 5.0
-  epoch_spike_z: 5.0
+  # 2026-10-13: robust threshold max(median + z*max(1.4826 MAD, sqrt(median)), factor*median,
+  # min_count) and >= epoch_spike_min_hits transits inside spikes. s107: 171 NEW, 0/216 known;
+  # s69: 83 NEW, 2/152 known (old 5x-median, 1-hit rule: s107 0 flagged; s69 5 known).
+  epoch_spike_factor: 2.0
+  epoch_spike_z: 6.0
   epoch_spike_min_count: 5
   epoch_spike_min_targets: 100
   epoch_spike_max_transits: 5
+  epoch_spike_min_hits: 2
   epoch_spike_max_frac: 0.5
   # Same period (aliases 1, 2, 1/2) and T0 on ANOTHER target of the run within this radius.
   # Role: duplicate (sep <= duplicate_radius_arcsec, TIC duplicate/split, Paegert+2021),

@@ -421,3 +421,19 @@ def test_kdr25_grazing_fails_and_radius_uses_ld_k():
     assert rep.fit["ld_k"] == pytest.approx(0.1, abs=0.005)
     off = vet_signal(sig, lc, None, SUN, CFG.model_copy(update={"ld_fit_enabled": False}))
     assert off.test("kdr25_grazing").passed is None and "ld_k" not in off.fit
+
+
+def test_uncounted_soft_test_lowers_score_but_not_verdict():
+    from planethunter.config import VettingConfig
+    from planethunter.vetting.basic import TestResult, _score
+
+    cfg = VettingConfig()
+    tests = [
+        TestResult("snr_pink", 6.0, 9.0, False),
+        TestResult("centroid", 2.0, 1.0, False),
+    ]
+    rep = _score(tests, cfg, None)
+    assert rep.verdict == "PASS_BASIC"  # one counted soft fail (centroid)
+    assert rep.score < 0.5
+    cfg2 = cfg.model_copy(update={"uncounted_soft_tests": []})
+    assert _score(tests, cfg2, None).verdict == "FAIL"

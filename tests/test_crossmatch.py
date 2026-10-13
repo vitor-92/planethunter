@@ -511,15 +511,18 @@ def test_marginal_transit_coincidence_is_flagged_not_known():
 # ---------------------------------------------------------------- run-level flags (A8)
 
 
-def _run(n_bg=150, n_spike=30, seed=0, t_spike=1010.1):
-    """Synthetic run: n_bg targets with 2 random transits, n_spike targets with one transit
-    at a common epoch (a spacecraft systematic) and one random."""
+def _run(n_bg=150, n_spike=30, seed=0, t_spike=1010.1, t_spike2=1018.6, spike_hits=2):
+    """Synthetic run: n_bg targets with 2 random transits, n_spike targets with `spike_hits`
+    transits at common epochs (spacecraft systematics: t_spike, then t_spike2) and the rest
+    random."""
     rng = np.random.default_rng(seed)
     rows = []
     for i in range(n_bg + n_spike):
         t = rng.uniform(1000.0, 1027.0, 2)
         if i >= n_bg:
             t[0] = t_spike + rng.normal(0, 0.02)
+            if spike_hits >= 2:
+                t[1] = t_spike2 + rng.normal(0, 0.02)
         rows.append(
             dict(
                 signal_id=i + 1,
@@ -549,6 +552,16 @@ def test_epoch_spikes_flag_common_epoch_systematics():
     background = frac[sigs.signal_id[sigs.tic_id < 1150]]
     assert (spiky >= CFG.epoch_spike_max_frac).mean() > 0.9
     assert (background >= CFG.epoch_spike_max_frac).mean() < 0.05
+
+
+def test_epoch_spike_single_hit_does_not_flag():
+    """One transit on a spike is not enough (a real 2-transit planet can be unlucky)."""
+    from planethunter.crossmatch.runlevel import epoch_spikes
+
+    sigs = _run(spike_hits=1)
+    frac, spikes = epoch_spikes(sigs, CFG)
+    assert ((spikes.t_start <= 1010.1) & (spikes.t_end > 1010.1)).any()
+    assert (frac[sigs.signal_id[sigs.tic_id >= 1150]] == 0.0).all()
 
 
 def test_epoch_spikes_need_many_targets_and_ignore_own_target():

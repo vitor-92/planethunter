@@ -157,6 +157,7 @@ class VettingConfig(BaseModel):
     unknown_weight: float = 0.95
     unknown_exempt_tests: list[str] = Field(default_factory=lambda: ["snr_pink", "kdr25_grazing"])
     max_soft_fails: int = 1
+    uncounted_soft_tests: list[str] = Field(default_factory=lambda: ["snr_pink"])
     hard_fail_tests: list[str] = Field(
         default_factory=lambda: [
             "tpf_difference_image",
@@ -232,11 +233,12 @@ class CrossmatchConfig(BaseModel):
     harmonic_max_fap: float = 0.05
     # Run-level systematics (audit A8)
     epoch_spike_bin_days: float = 0.25
-    epoch_spike_factor: float = 5.0  # spike: count >= factor * median count per bin...
-    epoch_spike_z: float = 5.0  # ...and >= median + z * sqrt(median)...
+    epoch_spike_factor: float = 2.0  # spike: count >= factor * median count per bin...
+    epoch_spike_z: float = 6.0  # ...and >= median + z * max(1.4826 MAD, sqrt(median))...
     epoch_spike_min_count: int = 5  # ...and >= this many distinct other targets
     epoch_spike_min_targets: int = 100  # fewer contributing targets -> fraction is NULL
     epoch_spike_max_transits: int = 5  # only few-transit signals build the histogram
+    epoch_spike_min_hits: int = 2  # fewer transits inside spikes -> fraction set to 0
     epoch_spike_max_frac: float = 0.5  # severity: >= this fraction = systematic, no alert
     shared_signal_radius_arcsec: float = 120.0
     duplicate_radius_arcsec: float = 2.0  # likely TIC duplicate/split (Paegert+2021)

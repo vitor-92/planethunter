@@ -946,7 +946,7 @@ def _score(
     (snr_pink missing in runs that predate it; kdr25_grazing without a constrained LD fit,
     already paid for by the duration test). Verdict (audit B6): FAIL on any veto, on any
     failure of a test listed in `hard_fail_tests`, or on more than `max_soft_fails` soft
-    failures; else PASS_BASIC.
+    failures, not counting `uncounted_soft_tests` (they still lower the score); else PASS_BASIC.
     Measured before the change: 5 confirmed planets failed on a single soft test because any
     weight <= 0.5 pushed the score below pass_score.
     """
@@ -963,7 +963,8 @@ def _score(
     if vetoed:
         score = 0.0
     hard = [n for n in failed if n in cfg.hard_fail_tests]
-    verdict = "FAIL" if vetoed or hard or len(failed) > cfg.max_soft_fails else "PASS_BASIC"
+    counted = [n for n in failed if n not in cfg.uncounted_soft_tests]
+    verdict = "FAIL" if vetoed or hard or len(counted) > cfg.max_soft_fails else "PASS_BASIC"
     fit_out = {}
     if fit:
         fit_out = {

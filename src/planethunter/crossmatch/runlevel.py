@@ -13,10 +13,18 @@ crossmatch columns `epoch_spike_frac` and `shared_signal_{tic,sep_arcsec,role}`.
      its signals land there), on two grids offset by half a bin (spikes straddling an edge);
    - baseline = median count over occupied bins; a bin is a spike when the count of OTHER
      targets (leave-one-target-out: the signal's own target is removed) is
-     >= max(factor x median, median + z sqrt(median), min_count);
+     >= max(median + z x 1.4826 MAD, factor x median, min_count). The MAD term adapts to
+     the background: with the wider period range (2026-10-13) sector 107 has ~100 targets
+     per bin, so a fixed 5x-median rule found no spike although the known spikes stood
+     3.5x (25 sigma) above it;
    - epoch_spike_frac = fraction of the signal's observed transits inside a spike bin of
-     either grid. NULL when fewer than epoch_spike_min_targets targets contribute (runs of
-     a single target or a handful: no statistics) or the signal has no transit times.
+     either grid, set to 0 when fewer than epoch_spike_min_hits transits are inside (one
+     unlucky transit must not suppress a real 2-transit planet). NULL when fewer than
+     epoch_spike_min_targets targets contribute (runs of a single target or a handful: no
+     statistics) or the signal has no transit times.
+     Measured 2026-10-13 (z 6, factor 2, min_hits 2): s107 171 NEW flagged, 0 of 216
+     known planets/TOIs; s69 83 NEW, 2 of 152 known. Old rule (5x median, 1 hit):
+     s107 0 flagged; s69 399 NEW and 5 known.
    Severity treats epoch_spike_frac >= epoch_spike_max_frac (0.5) as a systematic.
 
 2. Shared signals. The same period (ratio 1, 2 or 1/2 within
@@ -92,10 +100,12 @@ def epoch_spikes(sigs: pd.DataFrame, cfg: CrossmatchConfig) -> tuple[pd.Series, 
             }
         ).drop_duplicates()
         counts = pairs.groupby("b").size()
-        med = float(np.median(counts.to_numpy()))
+        arr = counts.to_numpy()
+        med = float(np.median(arr))
+        mad = 1.4826 * float(np.median(np.abs(arr - med)))
         thr = max(
+            med + cfg.epoch_spike_z * max(mad, math.sqrt(med)),
             cfg.epoch_spike_factor * med,
-            med + cfg.epoch_spike_z * math.sqrt(med),
             float(cfg.epoch_spike_min_count),
         )
         own = set(
@@ -124,7 +134,8 @@ def epoch_spikes(sigs: pd.DataFrame, cfg: CrossmatchConfig) -> tuple[pd.Series, 
                     in_spike[s][i] = True
     for s, flags in in_spike.items():
         if len(flags):
-            frac[s] = float(flags.mean())
+            hits = int(flags.sum())
+            frac[s] = float(flags.mean()) if hits >= cfg.epoch_spike_min_hits else 0.0
     return frac, pd.DataFrame(spike_rows) if spike_rows else empty
 
 
