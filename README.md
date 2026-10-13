@@ -63,6 +63,10 @@ uv run pytest              # offline, ~45 s
 uv run pytest -m network   # downloads Pi Men from MAST and recovers Pi Men c
 ```
 
+## License
+
+Code and documentation are released under the [MIT License](LICENSE). The TESS data and the catalogs the pipeline downloads keep their own terms (see below).
+
 ## Credits and citation
 
 PlanetHunter uses only public data and open software. If you use this code or its results, please cite the sources:

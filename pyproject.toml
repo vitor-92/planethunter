@@ -3,6 +3,8 @@ name = "planethunter"
 version = "1.0.0"
 description = "Search for exoplanet candidates in TESS data with vetting, crossmatch against catalogs and alerts."
 readme = "README.md"
+license = "MIT"
+license-files = ["LICENSE"]
 requires-python = ">=3.12,<3.13"
 dependencies = [
     "numpy>=1.26",
