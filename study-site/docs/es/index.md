@@ -51,6 +51,21 @@ Cada lección termina con una lista de verificación. Marca los elementos a medi
 
 <div id="progresso" markdown="0"></div>
 
+## Descarga el código
+
+PlanetHunter es código abierto ([licencia MIT](https://github.com/vitor-92/planethunter/blob/main/LICENSE)). La herramienta, este curso y toda la documentación están en un solo repositorio:
+
+**[github.com/vitor-92/planethunter](https://github.com/vitor-92/planethunter)**
+
+```
+git clone https://github.com/vitor-92/planethunter.git
+cd planethunter
+uv sync
+uv run planethunter --help
+```
+
+La instalación paso a paso y cada comando están en [Usar PlanetHunter](lab/using-planethunter.md). ¿Encontraste un error en una lección? Haz clic en el lápiz arriba de la página para sugerir una corrección en GitHub.
+
 ## Por dónde empezar
 
 1. Lee [Cómo estudiar](how-to-study.md) (5 minutos).

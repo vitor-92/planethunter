@@ -3,6 +3,10 @@ site_description: "A course for beginners on how exoplanets are found and how th
 site_author: PlanetHunter contributors
 # Final URL (GitHub Pages). If you point a custom domain at Pages, change it here.
 site_url: https://vitor-92.github.io/planethunter/
+# Source repository: shows the GitHub button (stars/forks) in the header and the edit pencil.
+repo_url: https://github.com/vitor-92/planethunter
+repo_name: vitor-92/planethunter
+edit_uri: edit/main/study-site/docs/
 docs_dir: docs
 site_dir: site
 
@@ -18,6 +22,7 @@ theme:
     - search.suggest
     - search.highlight
     - content.code.copy
+    - content.action.edit
     - toc.follow
   palette:
     - media: "(prefers-color-scheme: light)"
@@ -36,6 +41,7 @@ theme:
         name: Light mode
   icon:
     logo: material/telescope
+    repo: fontawesome/brands/github
 
 plugins:
   - search

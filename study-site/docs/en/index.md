@@ -51,6 +51,21 @@ Each lesson ends with a checklist. Tick the items as you finish them: the site r
 
 <div id="progresso" markdown="0"></div>
 
+## Get the code
+
+PlanetHunter is open source ([MIT License](https://github.com/vitor-92/planethunter/blob/main/LICENSE)). The tool, this course and all the documentation live in one repository:
+
+**[github.com/vitor-92/planethunter](https://github.com/vitor-92/planethunter)**
+
+```
+git clone https://github.com/vitor-92/planethunter.git
+cd planethunter
+uv sync
+uv run planethunter --help
+```
+
+The step-by-step installation and every command are in [Using PlanetHunter](lab/using-planethunter.md). Found a mistake in a lesson? Click the pencil at the top of the page to suggest a fix on GitHub.
+
 ## Where to start
 
 1. Read [How to study](how-to-study.md) (5 minutes).
