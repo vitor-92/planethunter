@@ -933,7 +933,10 @@ def fpp_test(
     fpp, nfpp = float(res["fpp"]), float(res["nfpp"])
     rp_ok = rp_rearth is not None and np.isfinite(rp_rearth) and rp_rearth < region_max_rp
     snr_ok = snr is not None and np.isfinite(snr) and snr >= region_min_snr
-    cad_ok = exptime_min is not None and exptime_min <= region_max_exptime_min + 1e-6
+    # The cadence is measured as the median time step, which jitters around the nominal value
+    # (SPOC 2-min: 2.0001-2.0002 min measured 2026-10-13); 5 % tolerance separates 2-min from
+    # the 200-s / 10-min / 30-min FFI cadences.
+    cad_ok = exptime_min is not None and exptime_min <= 1.05 * region_max_exptime_min
     region = bool(rp_ok and snr_ok and cad_ok)
     validated = region and fpp < validated_fpp and nfpp < validated_nfpp
     likely_planet = fpp < candidate_max and nfpp < validated_nfpp

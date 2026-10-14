@@ -434,3 +434,12 @@ def test_fpp_light_curve_uses_signal_windows_and_vetted_period(tmp_path, cfg, mo
     base = np.median(fl[np.abs(ph) > dur])
     kept = (base - fl[np.abs(ph) < 0.3 * dur].mean()) / depth
     assert kept > 0.85, kept
+
+
+def test_fpp_cadence_tolerates_measured_jitter():
+    from planethunter.vetting.deep import fpp_test
+
+    res = {"ok": True, "fpp": 0.01, "nfpp": 1e-5, "scenarios": []}
+    for exp, ok in ((2.00015, True), (3.3333, False), (10.0, False)):
+        tr = fpp_test(res, rp_rearth=3.0, snr=20.0, exptime_min=exp)
+        assert tr.extra["cadence_ok"] is ok

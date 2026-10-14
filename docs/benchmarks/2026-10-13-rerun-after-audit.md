@@ -103,11 +103,40 @@ For negatives, P1 drops from 2.6 % to 0.3 %. The ML only lowers priority: planet
 
 ## 6. Candidates and deep vetting (sector 107)
 
-**After basic vetting, crossmatch flags and the ML:** P1 = 2, P2 = 239 (sector 69: P2 = 43). Deep vetting runs on the 241 candidates; its results will be added to this section when it finishes.
+**After basic vetting, crossmatch flags and the ML:** P1 = 2, P2 = 239 (sector 69: P2 = 43).
 
-| signal | TIC | P (d) | Depth (ppm) | Rp (R⊕) | R\* (R☉) | Tmag | p_rank | Notes |
-|---|---|---|---|---|---|---|---|---|
-| 10793 | 594723 | 2.0515 | 15 500 | 15.3 | 1.19 | 13.1 | 0.55 | Hot-Jupiter-like; all basic tests pass; secondary 7 % of primary at 2.4σ (not significant) |
-| 13981 | 121634766 | 0.1790 (found at 0.358, halved) | 17 150 | 4.5 | 0.28 (Teff 2928 K) | 14.7 | 0.86 | Ultra-short period on an M dwarf; could also be a diluted binary. Shape τ/T14 0.344 sits at the 0.35 limit |
+**After deep vetting** (241 candidates, about 14 h, 0 errors): **P0 = 0, P1 = 0, P2 = 61**. The other 180 dropped out of the queue.
 
-Both are signals for human review, not discoveries.
+| Deep test | Pass | Fail | No result |
+|---|---|---|---|
+| `tpf_difference_image` (catalog position, proper motion) | 53 | 6 | 2 |
+| `gaia_neighbors` (PSF dilution) | 47 | 1 | 13 |
+| `gaia_eb` | 61 | 0 | 0 |
+| `simbad_type` (EB\*/SB\*/El\* only) | 50 | 5 | 6 |
+| `other_sectors` | 28 | 12 | 21 |
+| `fpp_triceratops` (3 repeats) | 14 | 1 | 18 |
+
+Counts are for the 61 candidates that remain.
+
+**FPP results (15 candidates).**
+- 9 have FPP < 0.1.
+- 7 are in the "likely planet" region (FPP < 0.5, NFPP < 10⁻³).
+- 1 reaches the validation level (FPP < 0.015, NFPP < 10⁻³).
+- None has NFPP > 0.1.
+
+**The two former P1:**
+
+| signal | TIC | P (d) | Depth (ppm) | Rp (R⊕) | Deep vetting | Final |
+|---|---|---|---|---|---|---|
+| 10793 | 594723 | 2.0515 | 15 500 | 15.3 | Difference image on target (0.23 px from TIC). Signal recovered in sectors 98 and 106. FPP 0.0039, NFPP 7×10⁻¹³ (mean of 3). **SIMBAD lists the star (GSC 06465-00602) as EB\* (suspected eclipsing binary).** | P2: the SIMBAD failure, plus Rp > 8 R⊕, which is outside the triceratops validation region |
+| 13981 | 121634766 | 0.1790 (halved) | 17 150 | 4.5 | Difference image on target. FPP 0.79 (likely false positive) | P2 |
+
+**Next step for 10793.** Human review. A hot-Jupiter-like transit with a low FPP and a SIMBAD "EB\*" flag usually means one of two things: an EB classification made from photometry alone, which a radial-velocity orbit would settle, or a real binary with a grazing companion. Check the SIMBAD references and the VSX entry before anything else. Both signals are for human review, not discoveries.
+
+**Two bugs found by this run and fixed afterwards.** Neither changed any result in this report.
+
+1. **FPP cadence flag.** The 2-min check required the measured cadence to be ≤ 2.0 min + 10⁻⁶. The median time step of SPOC data is 2.0001–2.0002 min, so every 2-min target was flagged outside the validation region. The tolerance is now 5 %. No candidate changed: the ones with score ≥ 0.8 have `p_rank` below the P1 cut.
+2. **`other_sectors` error.** For 4 ultra-short-period candidates (13981, 15325, 12624, 12759), the blind multi-sector search crashed inside TLS 2.0 ("zero-size array" in its detection statistics, sectors years apart). The whole test then reported no result.
+   - The blind search is now optional: on that error the test keeps the per-sector presence result and records the reason.
+   - Re-checked on 13981: the signal is present in sectors 32, 98 and 106 at SNR 10–17 against 26–43 expected (about half the depth), so the test now fails it as a systematic. This only strengthens its P2.
+   - The other 3 were not rerun; they are P2.

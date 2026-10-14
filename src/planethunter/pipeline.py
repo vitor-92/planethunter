@@ -1087,6 +1087,7 @@ def _deep_one(root_s: str, cfg_json: str, row: dict, max_sectors: int) -> dict:
                         null_trials=vc.other_sectors_null_trials,
                     )
             blind = None
+            blind_error = None
             frames_o = []
             for sec in avail:
                 path = root / "parquet" / f"sector={sec:04d}" / "author=SPOC"
@@ -1098,7 +1099,15 @@ def _deep_one(root_s: str, cfg_json: str, row: dict, max_sectors: int) -> dict:
                 from planethunter.search import search_target
 
                 star_o = read_meta(path).star if path.exists() else None
-                found = search_target(frames_o, star_o, cfg, tic_id=int(r.tic_id))
+                try:
+                    found = search_target(frames_o, star_o, cfg, tic_id=int(r.tic_id))
+                except ValueError as exc:
+                    # TLS 2.0 edge case (2026-10-13): for ultra-short periods over sectors years
+                    # apart its detection statistics build an empty in-transit template
+                    # ("zero-size array ... minimum"). Keep the per-sector presence result.
+                    found = None
+                    blind_error = f"blind search failed ({type(exc).__name__}: {exc})"[:160]
+            if frames_o and found is not None:
                 hits = [
                     s2
                     for s2 in found
@@ -1130,6 +1139,8 @@ def _deep_one(root_s: str, cfg_json: str, row: dict, max_sectors: int) -> dict:
                     + f" (sectors {[sx for _, sx in frames_o]}, expected SNR {exp_tot:.0f})",
                 }
             other = other_sectors_test(presence, r.fit_depth_ppm, blind=blind)
+            if blind_error:
+                other.note = f"{other.note} | {blind_error}" if other.note else blind_error
         except Exception as exc:
             other = TestResult(
                 "other_sectors", None, 10.0, None, note=f"{type(exc).__name__}: {exc}"[:200]
